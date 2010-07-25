@@ -1,5 +1,0 @@
-C:\Users\Justin\Desktop\CoreAudio\CoreAudioApi\bin\Debug\CoreAudioApi.dll
-C:\Users\Justin\Desktop\CoreAudio\CoreAudioApi\bin\Debug\CoreAudioApi.pdb
-C:\Users\Justin\Desktop\CoreAudio\CoreAudioApi\obj\Debug\ResolveAssemblyReference.cache
-C:\Users\Justin\Desktop\CoreAudio\CoreAudioApi\obj\Debug\CoreAudioApi.dll
-C:\Users\Justin\Desktop\CoreAudio\CoreAudioApi\obj\Debug\CoreAudioApi.pdb
