@@ -1,0 +1,10 @@
+F:\programming\C#\SleepyTunes\CoreAudioApi\bin\x86\Release\CoreAudioApi.dll
+F:\programming\C#\SleepyTunes\CoreAudioApi\bin\x86\Release\CoreAudioApi.pdb
+F:\programming\C#\SleepyTunes\CoreAudioApi\obj\x86\Release\ResolveAssemblyReference.cache
+F:\programming\C#\SleepyTunes\CoreAudioApi\obj\x86\Release\CoreAudioApi.dll
+F:\programming\C#\SleepyTunes\CoreAudioApi\obj\x86\Release\CoreAudioApi.pdb
+D:\programming\C#\SleepyTunes\CoreAudioApi\bin\x86\Release\CoreAudioApi.dll
+D:\programming\C#\SleepyTunes\CoreAudioApi\bin\x86\Release\CoreAudioApi.pdb
+D:\programming\C#\SleepyTunes\CoreAudioApi\obj\x86\Release\ResolveAssemblyReference.cache
+D:\programming\C#\SleepyTunes\CoreAudioApi\obj\x86\Release\CoreAudioApi.dll
+D:\programming\C#\SleepyTunes\CoreAudioApi\obj\x86\Release\CoreAudioApi.pdb
