@@ -5,14 +5,23 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SleepyTunes", "SleepyTunes\
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		CD_ROM|Any CPU = CD_ROM|Any CPU
 		Debug|Any CPU = Debug|Any CPU
+		DVD-5|Any CPU = DVD-5|Any CPU
 		Release|Any CPU = Release|Any CPU
+		SingleImage|Any CPU = SingleImage|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D1679D41-D338-48BC-B483-01E3FAE617C0}.CD_ROM|Any CPU.ActiveCfg = Release|Any CPU
+		{D1679D41-D338-48BC-B483-01E3FAE617C0}.CD_ROM|Any CPU.Build.0 = Release|Any CPU
 		{D1679D41-D338-48BC-B483-01E3FAE617C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D1679D41-D338-48BC-B483-01E3FAE617C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1679D41-D338-48BC-B483-01E3FAE617C0}.DVD-5|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1679D41-D338-48BC-B483-01E3FAE617C0}.DVD-5|Any CPU.Build.0 = Debug|Any CPU
 		{D1679D41-D338-48BC-B483-01E3FAE617C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1679D41-D338-48BC-B483-01E3FAE617C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1679D41-D338-48BC-B483-01E3FAE617C0}.SingleImage|Any CPU.ActiveCfg = Release|Any CPU
+		{D1679D41-D338-48BC-B483-01E3FAE617C0}.SingleImage|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
