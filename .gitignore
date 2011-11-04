@@ -1,0 +1,7 @@
+
+/_ReSharper.SleepyTunes
+/SleepyTunes.6.0.ReSharper.user
+*.suo
+/SleepyTunes/SleepyTunes.csproj.ReSharper.user
+/SleepyTunes/bin
+/SleepyTunes/obj

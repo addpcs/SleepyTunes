@@ -1,6 +1,6 @@
 ﻿namespace SleepyTunes
 {
-    partial class gui
+    partial class Gui
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(gui));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Gui));
             this.comboAction = new System.Windows.Forms.ComboBox();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.txtRunCmd = new System.Windows.Forms.TextBox();
@@ -57,7 +57,7 @@
             this.comboAction.Size = new System.Drawing.Size(428, 21);
             this.comboAction.TabIndex = 1;
             this.comboAction.Text = "Do nothing";
-            this.comboAction.SelectedIndexChanged += new System.EventHandler(this.comboAction_SelectedIndexChanged);
+            this.comboAction.SelectedIndexChanged += new System.EventHandler(this.ComboActionSelectedIndexChanged);
             // 
             // groupBox2
             // 
@@ -103,7 +103,7 @@
             this.txtRestoreVol.Size = new System.Drawing.Size(36, 20);
             this.txtRestoreVol.TabIndex = 4;
             this.txtRestoreVol.Text = "50";
-            this.txtRestoreVol.Leave += new System.EventHandler(this.txtRestoreVol_Leave);
+            this.txtRestoreVol.Leave += new System.EventHandler(this.TxtRestoreVolLeave);
             // 
             // chkRestoreVol
             // 
@@ -114,7 +114,7 @@
             this.chkRestoreVol.TabIndex = 3;
             this.chkRestoreVol.Text = "Reset Volume Level";
             this.chkRestoreVol.UseVisualStyleBackColor = true;
-            this.chkRestoreVol.CheckStateChanged += new System.EventHandler(this.chkRestoreVol_CheckedStateChanged);
+            this.chkRestoreVol.CheckStateChanged += new System.EventHandler(this.ChkRestoreVolCheckedStateChanged);
             // 
             // chkMuteWhenDone
             // 
@@ -151,10 +151,10 @@
             this.zg1.Size = new System.Drawing.Size(614, 375);
             this.zg1.TabIndex = 6;
             this.zg1.ZoomModifierKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.None)));
-            this.zg1.ZoomEvent += new ZedGraph.ZedGraphControl.ZoomEventHandler(this.zg1_ZoomEvent);
-            this.zg1.PointEditEvent += new ZedGraph.ZedGraphControl.PointEditHandler(this.zg1_PointEditEvent);
-            this.zg1.PointValueEvent += new ZedGraph.ZedGraphControl.PointValueHandler(this.zg1_PointValueEvent);
-            this.zg1.DoubleClickEvent += new ZedGraph.ZedGraphControl.ZedMouseEventHandler(this.zg1_DoubleClick);
+            this.zg1.ZoomEvent += new ZedGraph.ZedGraphControl.ZoomEventHandler(this.Zg1ZoomEvent);
+            this.zg1.PointEditEvent += new ZedGraph.ZedGraphControl.PointEditHandler(this.Zg1PointEditEvent);
+            this.zg1.PointValueEvent += new ZedGraph.ZedGraphControl.PointValueHandler(this.Zg1PointValueEvent);
+            this.zg1.DoubleClickEvent += new ZedGraph.ZedGraphControl.ZedMouseEventHandler(this.Zg1DoubleClick);
             // 
             // btnGo
             // 
@@ -165,7 +165,7 @@
             this.btnGo.Size = new System.Drawing.Size(174, 131);
             this.btnGo.TabIndex = 2;
             this.btnGo.UseVisualStyleBackColor = true;
-            this.btnGo.Click += new System.EventHandler(this.btnGo_Click);
+            this.btnGo.Click += new System.EventHandler(this.BtnGoClick);
             // 
             // gui
             // 
@@ -178,9 +178,9 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.btnGo);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "gui";
+            this.Name = "Gui";
             this.Text = "SleepyTunes";
-            this.Resize += new System.EventHandler(this.gui_Resize);
+            this.Resize += new System.EventHandler(this.GuiResize);
             this.groupBox2.ResumeLayout(false);
             this.groupBox2.PerformLayout();
             this.ResumeLayout(false);

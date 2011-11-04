@@ -1,66 +1,59 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 using System.Timers;
 using CoreAudioApi;
 using System.Diagnostics;
+using SleepyTunes.Properties;
 using ZedGraph;
 
 namespace SleepyTunes
 {
-    public partial class gui : Form
+    public partial class Gui : Form
     {
 
-        private MMDevice audDev;
-        private System.Timers.Timer clock;
-        private DateTime tStart, tEnd;
-        private double endVol;
-        private bool isRunning = false;
+        private readonly MMDevice _audDev;
+        private readonly System.Timers.Timer _clock;
+        private DateTime _tStart, _tEnd;
+        private double _endVol;
+        private bool _isRunning;
 
-        public gui()
+        public Gui()
         {
-            
-            MMDeviceEnumerator DevEnum = new MMDeviceEnumerator();
-            if (DevEnum == null)
+            MMDeviceEnumerator devEnum;
+            try
             {
-                MessageBox.Show("Could not enumerate audio devices", "Error");
+                devEnum = new MMDeviceEnumerator();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, Resources.gui_Error);
                 Application.Exit();
                 return;
             }
 
-            audDev = DevEnum.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia);
-            if (audDev == null)
+            _audDev = devEnum.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eMultimedia);
+            if (_audDev == null)
             {
-                MessageBox.Show("No default audio device found", "Error");
+                MessageBox.Show(Resources.gui_No_default_audio_device_found, Resources.gui_Error);
                 Application.Exit();
                 return;
             }
             //tbStartVol.Value = (int)(audDev.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
             //chkStartMute.Checked = audDev.AudioEndpointVolume.Mute;
-            audDev.AudioEndpointVolume.OnVolumeNotification += new AudioEndpointVolumeNotificationDelegate(AudioEndpointVolume_OnVolumeNotification);
+            _audDev.AudioEndpointVolume.OnVolumeNotification += AudioEndpointVolume_OnVolumeNotification;
             InitializeComponent();
-            double currentVol = (audDev.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
+            double currentVol = (_audDev.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
 
-            if (currentVol > 0)
-            {
-                CreateGraph(zg1, currentVol, 0);
-            }
-            else
-            {
-                CreateGraph(zg1, 50, 0);
-            }
+            CreateGraph(zg1, currentVol > 0 ? currentVol : 50, 0);
             SetSize(zg1);
 
             txtRestoreVol.Text = "" + (int)currentVol;
 
-            clock = new System.Timers.Timer();
-            clock.Elapsed += new ElapsedEventHandler(clock_Elapsed);
-            clock.Interval = 500; // ms
+            _clock = new System.Timers.Timer();
+            _clock.Elapsed += ClockElapsed;
+            _clock.Interval = 500; // ms
 
         }
 
@@ -75,21 +68,22 @@ namespace SleepyTunes
             myPane.XAxis.Title.Text = "Elapsed Time (h:m:s)";
             myPane.YAxis.Title.Text = "Volume (%)";
 
-            myPane.XAxis.ScaleFormatEvent += new Axis.ScaleFormatHandler(XAxis_ScaleFormatEvent);
+            myPane.XAxis.ScaleFormatEvent += XAxisScaleFormatEvent;
 
             // Add a progress symbol
-            PointPairList listProgress = new PointPairList();
-            listProgress.Add(0, -1);
-            LineItem progress = myPane.AddCurve("", listProgress, Color.Orange, SymbolType.Star);
+            var listProgress = new PointPairList {{0, -1}};
+            var progress = myPane.AddCurve("", listProgress, Color.Orange, SymbolType.Star);
             progress.Symbol.Fill = new Fill(Color.Orange);
 
             // Create the initial graph
-            PointPairList list = new PointPairList();
-            list.Add(0, startVol);
-            list.Add(15 * 60, (startVol - ((startVol - endVol) * 0.08)));
-            list.Add(30 * 60, (startVol - ((startVol - endVol) * 0.25)));
-            list.Add(60 * 60, endVol);
-            
+            var list = new PointPairList
+                           {
+                               {0, startVol},
+                               {15*60, (startVol - ((startVol - endVol)*0.08))},
+                               {30*60, (startVol - ((startVol - endVol)*0.25))},
+                               {60*60, endVol}
+                           };
+
             // Generate a blue curve with circle symbols
             LineItem myCurve = myPane.AddCurve("", list, Color.Blue, SymbolType.Circle);
             // Fill the area under the curve with a white-red gradient at 45 degrees
@@ -98,9 +92,8 @@ namespace SleepyTunes
             myCurve.Symbol.Fill = new Fill(Color.White);
 
             // Add the current volume as a bar
-            PointPairList listVolBar = new PointPairList();
-            listVolBar.Add(0, (audDev.AudioEndpointVolume.MasterVolumeLevelScalar * 100));
-            BarItem bar = myPane.AddBar("Current Volume", listVolBar, (audDev.AudioEndpointVolume.Mute) ? Color.Red : Color.Green);
+            var listVolBar = new PointPairList {{0, (_audDev.AudioEndpointVolume.MasterVolumeLevelScalar*100)}};
+            myPane.AddBar("Current Volume", listVolBar, (_audDev.AudioEndpointVolume.Mute) ? Color.Red : Color.Green);
 
 
             // Fill the axis background with a color gradient
@@ -125,7 +118,7 @@ namespace SleepyTunes
         private void SetSize(ZedGraphControl zgc)
         {
             // Control is always 10 pixels inset from the client rectangle of the form
-            Rectangle formRect = this.ClientRectangle;
+            var formRect = ClientRectangle;
             formRect.Inflate(-10, -85);
             formRect.Offset(0, -75);
 
@@ -136,24 +129,21 @@ namespace SleepyTunes
             }
         }
 
-        string XAxis_ScaleFormatEvent(GraphPane pane, Axis axis, double val, int index)
+        static string XAxisScaleFormatEvent(GraphPane pane, Axis axis, double val, int index)
         {
-            int h, m;
-            double s;
-
-            h = (int)val / 60 / 60;
-            m = (int)val / 60 - (h * 60);
-            s = val - (m * 60) - (h * 60 * 60);
+            var h = (int)val / 60 / 60;
+            var m = (int)val / 60 - (h * 60);
+            var s = val - (m * 60) - (h * 60 * 60);
             return "" + ((h > 0) ? (h.ToString("0") + ":") : "") + m.ToString("00") + ":" + s.ToString("00.##");
         }
 
-        private bool zg1_DoubleClick(ZedGraphControl control, MouseEventArgs e)
+        private bool Zg1DoubleClick(ZedGraphControl control, MouseEventArgs e)
         {
             double curX, curY;
             CurveItem nCurve;
             int i;
-            GraphPane myPane = control.GraphPane;
-            PointF mousePt = new PointF(e.X, e.Y);
+            var myPane = control.GraphPane;
+            var mousePt = new PointF(e.X, e.Y);
             myPane.ReverseTransform(mousePt, out curX, out curY);
             //MessageBox.Show("(" + e.X + "," + e.Y + ") (" + curX + "," + curY + ")");
             if (myPane.FindNearestPoint(mousePt, out nCurve, out i) && nCurve.Points is PointPairList)
@@ -165,7 +155,7 @@ namespace SleepyTunes
             }
             else
             {
-                PointPair newP = new PointPair(curX, curY);
+                var newP = new PointPair(curX, curY);
                 enforceBounds(newP);
                 myPane.CurveList[1].AddPoint(newP);
             }
@@ -175,7 +165,7 @@ namespace SleepyTunes
             return true;
         }
 
-        private string zg1_PointEditEvent(ZedGraphControl sender, GraphPane pane, CurveItem curve, int iPt)
+        private string Zg1PointEditEvent(ZedGraphControl sender, GraphPane pane, CurveItem curve, int iPt)
         {
             enforceBounds(curve[iPt]);
             enforceFunction(curve);
@@ -183,7 +173,7 @@ namespace SleepyTunes
             if (curve == pane.CurveList[2])
             {
                 // Set the system volume
-                audDev.AudioEndpointVolume.MasterVolumeLevelScalar = ((float)curve[iPt].Y / 100.0f);
+                _audDev.AudioEndpointVolume.MasterVolumeLevelScalar = ((float)curve[iPt].Y / 100.0f);
             }
 
             sender.Refresh();
@@ -208,12 +198,12 @@ namespace SleepyTunes
 
         private void enforceFunction(CurveItem c)
         {
-            PointPairList ppl = (PointPairList)c.Points;
+            var ppl = (PointPairList)c.Points;
             ppl.Sort();
             if (ppl.Count > 0)
             {
                 ppl[0].X = 0;
-                for (int i = (ppl.Count - 1); i > 0; i--)
+                for (var i = (ppl.Count - 1); i > 0; i--)
                 {
                     if (ppl[i].X == ppl[i - 1].X)
                     {
@@ -223,35 +213,31 @@ namespace SleepyTunes
             }
         }
 
-        private void zg1_ZoomEvent(ZedGraphControl sender, ZoomState oldState, ZoomState newState)
+        private void Zg1ZoomEvent(ZedGraphControl sender, ZoomState oldState, ZoomState newState)
         {
             sender.GraphPane.XAxis.Scale.Min = 0;
         }
 
-        private string zg1_PointValueEvent(ZedGraphControl sender, GraphPane pane, CurveItem curve, int iPt)
+        private string Zg1PointValueEvent(ZedGraphControl sender, GraphPane pane, CurveItem curve, int iPt)
         {
-            int h, m;
-            double s, val;
-
-            val = curve[iPt].X;
-
-            h = (int)val / 60 / 60;
-            m = (int)val / 60 - (h * 60);
-            s = val - (m * 60) - (h * 60 * 60);
+            var val = curve[iPt].X;
+            var h = (int)val / 60 / 60;
+            var m = (int)val / 60 - (h * 60);
+            var s = val - (m * 60) - (h * 60 * 60);
             return "(" + ((h > 0) ? (h.ToString("0") + ":") : "") + m.ToString("00") + ":" + s.ToString("00.##") + ", " + curve[iPt].Y.ToString("0.##") + "%)";
         }
 
         #endregion
 
 
-        PointPair prevPoint(double t)
+        PointPair PrevPoint(double t)
         {
-            PointPairList ppl = (PointPairList)zg1.GraphPane.CurveList[1].Points;
+            var ppl = (PointPairList)zg1.GraphPane.CurveList[1].Points;
 
-            PointPair prev = ppl[0];
+            var prev = ppl[0];
 
 
-            foreach (PointPair p in ppl)
+            foreach (var p in ppl)
             {
                 if (t == p.X)
                 {
@@ -267,57 +253,51 @@ namespace SleepyTunes
             return ppl[ppl.Count-1];
         }
 
-        PointPair nextPoint(double t)
+        PointPair NextPoint(double t)
         {
-            PointPairList ppl = (PointPairList)zg1.GraphPane.CurveList[1].Points;
+            var ppl = (PointPairList)zg1.GraphPane.CurveList[1].Points;
 
-            foreach (PointPair p in ppl)
+            foreach (var p in ppl.Where(p => t < p.X))
             {
-                if (t < p.X)
-                {
-                    return p;
-                }
+                return p;
             }
 
             return ppl[ppl.Count - 1];
         }
 
         //This function runs once every second
-        void clock_Elapsed(object sender, ElapsedEventArgs e)
+        void ClockElapsed(object sender, ElapsedEventArgs e)
         {
             // Figure out elapsted time, t
-            double t = DateTime.Now.Subtract(tStart).TotalSeconds;
-
-            double tRem = tEnd.Subtract(DateTime.Now).TotalSeconds;
-
-           
+            var t = DateTime.Now.Subtract(_tStart).TotalSeconds;
+            var tRem = _tEnd.Subtract(DateTime.Now).TotalSeconds;
 
             if (tRem > 0)
             {
-                PointPair prev = prevPoint(t);
-                PointPair next = nextPoint(t);
+                PointPair prev = PrevPoint(t);
+                PointPair next = NextPoint(t);
 
                 if (prev.X == next.X)
                 {
                     return;
                 }
 
-                double slope = (next.Y - prev.Y) / (next.X - prev.X);
+                var slope = (next.Y - prev.Y) / (next.X - prev.X);
 
-                double vol = slope * (t - prev.X) + prev.Y;
+                var vol = slope * (t - prev.X) + prev.Y;
 
-                audDev.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(vol / 100.0);
+                _audDev.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(vol / 100.0);
 
                 // Show progress indicator at current point
-                MethodInvoker theShit = new MethodInvoker(delegate()
+                var theShit = new MethodInvoker(() =>
+                                                    {
+                                                        zg1.GraphPane.CurveList[0].Points[0].X = t;
+                                                        zg1.GraphPane.CurveList[0].Points[0].Y = vol;
+                                                        zg1.Refresh();
+                                                    });
+                if (InvokeRequired)
                 {
-                    zg1.GraphPane.CurveList[0].Points[0].X = t;
-                    zg1.GraphPane.CurveList[0].Points[0].Y = vol;
-                    zg1.Refresh();
-                });
-                if (this.InvokeRequired)
-                {
-                    this.BeginInvoke(theShit);
+                    BeginInvoke(theShit);
                 }
                 else
                 {
@@ -326,84 +306,73 @@ namespace SleepyTunes
             }
             else
             {
-                clock.Stop();
-                audDev.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(endVol / 100.0);
+                _clock.Stop();
+                _audDev.AudioEndpointVolume.MasterVolumeLevelScalar = (float)(_endVol / 100.0);
 
-                MethodInvoker theShit = new MethodInvoker(delegate()
+                var theShit = new MethodInvoker(() =>
+                                                    {
+                                                        //Set Audio to Mute
+                                                        if (chkMuteWhenDone.Checked)
+                                                        {
+                                                            _audDev.AudioEndpointVolume.Mute = true;
+                                                        }
+
+                                                        zg1.GraphPane.CurveList[0].Points[0].X = t;
+                                                        zg1.GraphPane.CurveList[0].Points[0].Y = _endVol;
+                                                        zg1.Refresh();
+
+                                                        //Set Volume Level
+                                                        if (chkRestoreVol.Checked)
+                                                        {
+                                                            try
+                                                            {
+                                                                _audDev.AudioEndpointVolume.MasterVolumeLevelScalar =
+                                                                    Single.Parse(txtRestoreVol.Text)/100.0f;
+                                                            }
+                                                            catch {}
+                                                        }
+
+                                                        //Standby
+                                                        switch (comboAction.SelectedIndex)
+                                                        {
+                                                            case 1:
+                                                                Application.SetSuspendState(PowerState.Suspend, true, true);
+                                                                break;
+                                                            case 2:
+                                                                Application.SetSuspendState(PowerState.Hibernate, true, true);
+                                                                break;
+                                                            case 3:
+                                                                CmdExec("shutdown /s /t 0");
+                                                                break;
+                                                            case 4:
+                                                                CmdExec("shutdown /r /t 0");
+                                                                break;
+                                                            case 5:
+                                                                Program.LockWorkStation();
+                                                                break;
+                                                            case 6:
+                                                                Program.ExitWindowsEx((uint) Program.ExitVals.LogOff, 0);
+                                                                break;
+                                                            case 7:
+                                                                CmdExec(txtRunCmd.Text);
+                                                                break;
+                                                        }
+
+                                                        //Close App, this has to be last
+                                                        if (chkExit.Checked)
+                                                        {
+                                                            Application.Exit();
+                                                        }
+                                                        else
+                                                        {
+                                                            _isRunning = false;
+                                                            btnGo.Image = Resources.startButton;
+                                                            zg1.Enabled = true;
+                                                        }
+                                                    });
+                if (InvokeRequired)
                 {
-                    //Set Audio to Mute
-                    if (chkMuteWhenDone.Checked)
-                    {
-                        audDev.AudioEndpointVolume.Mute = true;
-                    }
-
-                    zg1.GraphPane.CurveList[0].Points[0].X = t;
-                    zg1.GraphPane.CurveList[0].Points[0].Y = endVol;
-                    zg1.Refresh();
-
-                    //Set Volume Level
-                    if (chkRestoreVol.Checked)
-                    {
-                        try
-                        {
-                            audDev.AudioEndpointVolume.MasterVolumeLevelScalar = Single.Parse(txtRestoreVol.Text) / 100.0f;
-                        }
-                        catch (Exception ex) { }
-                    }
-
-                    //Standby
-                    if (comboAction.SelectedIndex == 1)
-                    {
-                        Application.SetSuspendState(PowerState.Suspend, true, true);
-                    }
-                    //Hibernate
-                    else if (comboAction.SelectedIndex == 2)
-                    {
-                        Application.SetSuspendState(PowerState.Hibernate, true, true);
-                    }
-                    //Shut down
-                    else if (comboAction.SelectedIndex == 3)
-                    {
-                        //Program.ExitWindowsEx((uint)Program.ExitVals.PowerOff, 0);
-                        CMDExec("shutdown /s /t 0");
-                    }
-                    //Reboot
-                    else if (comboAction.SelectedIndex == 4)
-                    {
-                        //Program.ExitWindowsEx((uint)Program.ExitVals.Reboot, 0);
-                        CMDExec("shutdown /r /t 0");
-                    }
-                    //Lock Workstation
-                    else if (comboAction.SelectedIndex == 5)
-                    {
-                        Program.LockWorkStation();
-                    }
-                    //Log Off
-                    else if (comboAction.SelectedIndex == 6)
-                    {
-                        Program.ExitWindowsEx((uint)Program.ExitVals.LogOff, 0);
-                    }
-                    //Execute Command
-                    else if (comboAction.SelectedIndex == 7)
-                    {
-                        CMDExec(txtRunCmd.Text);
-                    }
-
-                    //Close App, this has to be last
-                    if (chkExit.Checked)
-                    {
-                        Application.Exit();
-                    }
-                    else
-                    {
-                        isRunning = false;
-                        btnGo.Image = SleepyTunes.Properties.Resources.startButton;
-                        zg1.Enabled = true;
-                    }
-                });
-                if (this.InvokeRequired)
-                {
-                    this.BeginInvoke(theShit);
+                    BeginInvoke(theShit);
                 }
                 else
                 {
@@ -412,31 +381,38 @@ namespace SleepyTunes
             }
         }
 
-        void CMDExec(String cmd)
+        static void CmdExec(String cmd)
         {
-            Process p = new Process();
-            p.StartInfo.FileName = "cmd";
-            p.StartInfo.Arguments = "/c " + cmd;
-            p.StartInfo.CreateNoWindow = true;
-            p.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            var p = new Process
+                        {
+                            StartInfo =
+                                {
+                                    FileName = "cmd",
+                                    Arguments = "/c " + cmd,
+                                    CreateNoWindow = true,
+                                    WindowStyle = ProcessWindowStyle.Hidden
+                                }
+                        };
             p.Start();
         }
 
         void AudioEndpointVolume_OnVolumeNotification(AudioVolumeNotificationData data)
         {
-            MethodInvoker theShit = new MethodInvoker(delegate()
-            {
-                CurveItem c = zg1.GraphPane.CurveList[2];
-                PointPairList ppl = (PointPairList)c.Points;
+            var theShit = new MethodInvoker(() =>
+                                                {
+                                                    var c = zg1.GraphPane.CurveList[2];
+                                                    var ppl = (PointPairList) c.Points;
 
-                ppl[0].Y = (audDev.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
-                c.Color = (audDev.AudioEndpointVolume.Mute) ? Color.Red : Color.Green;
+                                                    ppl[0].Y = (_audDev.AudioEndpointVolume.MasterVolumeLevelScalar*100);
+                                                    c.Color = (_audDev.AudioEndpointVolume.Mute)
+                                                                  ? Color.Red
+                                                                  : Color.Green;
 
-                zg1.Refresh();
-            });
-            if (this.InvokeRequired)
+                                                    zg1.Refresh();
+                                                });
+            if (InvokeRequired)
             {
-                this.BeginInvoke(theShit);
+                BeginInvoke(theShit);
             }
             else
             {
@@ -444,74 +420,74 @@ namespace SleepyTunes
             }
         }
 
-        private void btnGo_Click(object sender, EventArgs e)
+        private void BtnGoClick(object sender, EventArgs e)
         {
-            if (!isRunning)
+            if (!_isRunning)
             {
                 // Start running
-                PointPairList ppl = (PointPairList)zg1.GraphPane.CurveList[1].Points;
-                PointPair endPt = ppl[ppl.Count - 1];
+                var ppl = (PointPairList)zg1.GraphPane.CurveList[1].Points;
+                var endPt = ppl[ppl.Count - 1];
 
-                tStart = DateTime.Now;
-                tEnd = tStart.AddSeconds(endPt.X);
+                _tStart = DateTime.Now;
+                _tEnd = _tStart.AddSeconds(endPt.X);
 
-                endVol = endPt.Y;
+                _endVol = endPt.Y;
 
-                if (tEnd.Subtract(tStart).TotalSeconds > 0)
+                if (_tEnd.Subtract(_tStart).TotalSeconds > 0)
                 {
-                    btnGo.Image = SleepyTunes.Properties.Resources.stopButton;
+                    btnGo.Image = Resources.stopButton;
                     zg1.Enabled = false;
                     zg1.AxisChange();
-                    isRunning = true;
-                    clock.Start();
+                    _isRunning = true;
+                    _clock.Start();
                 }
                 else
                 {
-                    MessageBox.Show("The duration must be greater than 0 seconds!");
+                    MessageBox.Show(Resources.Gui_BtnGoClick_The_duration_must_be_greater_than_0_seconds_);
                 }
             }
             else
             {
                 // Abort current run!
-                clock.Stop();
-                isRunning = false;
-                btnGo.Image = SleepyTunes.Properties.Resources.startButton;
+                _clock.Stop();
+                _isRunning = false;
+                btnGo.Image = Resources.startButton;
                 zg1.Enabled = true;
             }
             
         }
 
 
-        private void chkRestoreVol_CheckedStateChanged(object sender, EventArgs e)
+        private void ChkRestoreVolCheckedStateChanged(object sender, EventArgs e)
         {
             txtRestoreVol.Enabled = (chkRestoreVol.CheckState == CheckState.Checked);
         }
 
-        private void txtRestoreVol_Leave(object sender, EventArgs e)
+        private void TxtRestoreVolLeave(object sender, EventArgs e)
         {
             try
             {
                 if (Single.Parse(txtRestoreVol.Text) > 100)
                 {
-                    txtRestoreVol.Text = "100";
+                    txtRestoreVol.Text = @"100";
                 }
                 else if (Single.Parse(txtRestoreVol.Text) < 0)
                 {
-                    txtRestoreVol.Text = "0";
+                    txtRestoreVol.Text = @"0";
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                txtRestoreVol.Text = "0";
+                txtRestoreVol.Text = @"0";
             }
         }
 
-        private void comboAction_SelectedIndexChanged(object sender, EventArgs e)
+        private void ComboActionSelectedIndexChanged(object sender, EventArgs e)
         {
             txtRunCmd.Visible = (comboAction.SelectedIndex == 7);
         }
 
-        private void gui_Resize(object sender, EventArgs e)
+        private void GuiResize(object sender, EventArgs e)
         {
             SetSize(zg1);
         }

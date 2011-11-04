@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 
@@ -16,7 +14,7 @@ namespace SleepyTunes
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new gui());
+            Application.Run(new Gui());
         }
 
         #region Dll Imports
