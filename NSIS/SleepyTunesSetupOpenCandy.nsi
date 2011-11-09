@@ -24,7 +24,7 @@ Name "${APPNAME} ${VERSION}"
 BrandingText "Copyright ${COMPANY} 2011"
 
 # name of generated installer exe
-OutFile "${APPNAME}_Setup_${VERSION}.exe"
+OutFile "..\bin\${APPNAME}_Setup_${VERSION}.exe"
 
 # default install location
 InstallDir "$PROGRAMFILES\${COMPANY}\${APPNAME}"
@@ -131,8 +131,25 @@ SectionEnd
 Section "$(Section_Name_MainProduct)" sect0
 	SectionIn RO
 	Push $OUTDIR
-	
+
 	SetOutPath "$INSTDIR"
+	
+	# check for and install .Net 4.0 Client profile
+	ReadRegDWORD $0 HKLM "SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Client" Install
+	IntOp $8 $0 & 1
+	${If} $8 != 1
+		File ..\prereq\dotNetFx40_Client_setup.exe
+		DetailPrint "Installing the .Net 4.0 Framework, this make take several minutes..."
+		ExecWait '"$INSTDIR\dotNetFx40_Client_setup.exe"  /q /norestart /ChainingPackage "${APPNAME}"' $0
+		Delete "$INSTDIR\dotNetFx40_Client_setup.exe"
+		${If} $0 == 3010
+			SetRebootFlag true
+		${ElseIf} $0 != 0
+			Abort "Failed to install .Net Framework: Error $0"
+		${EndIf}
+	${EndIf}
+	
+	# install the app
 	File ..\bin\${APPNAME}.exe
 
 	# Create an uninstaller and add it to the Add an Add/Remove programs list
