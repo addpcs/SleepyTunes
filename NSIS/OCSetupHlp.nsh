@@ -123,6 +123,27 @@
 
 
 ;--------------------------------
+; OpenCandy defaults
+;--------------------------------
+
+; DLL relocation support
+!ifndef OC_OCSETUPHLP_FILE_PATH
+	!warning "Do not forget to define OC_OCSETUPHLP_FILE_PATH in your script. Defaulting to 'OCSetupHlp.dll'."
+	!define OC_OCSETUPHLP_FILE_PATH ".\OCSetupHlp.dll"
+!endif
+
+; OC_MAX_INIT_TIME is the maximum time in milliseconds that OCInit may block when fetching offers.
+; Note that under normal network conditions OCInit may return sooner. Setting this value too low
+; may reduce offer rate. Values of 5000 or greater are recommended. If you intend to override this
+; default do so by defining it in your .nsi file before #include'ing this header. Be certain to
+; make OpenCandy partner support aware of any override you apply because this can affect your metrics.
+!ifndef OC_MAX_INIT_TIME
+	!define OC_MAX_INIT_TIME 8000
+!endif
+
+
+
+;--------------------------------
 ; OpenCandy global variables
 ;--------------------------------
 
@@ -135,6 +156,7 @@ Var OCUseOfferPage
 Var OCProductInstallSuccess
 Var OCAttached
 Var OCHasReachedOCPage
+
 
 
 ;--------------------------------
@@ -246,29 +268,28 @@ Var OCHasReachedOCPage
 		!error "Value for OC_DEV_ERROR must be either OC_NSIS_TRUE or OC_NSIS_FALSE!"
 	!endif
 	!ifdef NSIS_UNICODE
-		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536LogDevModeMessageW(w, i, i)(r0, ${OC_TMP_DEV_ERROR}, ${OC_FAQ_ID})? c"
+		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800LogDevModeMessageW(w, i, i)(r0, ${OC_TMP_DEV_ERROR}, ${OC_FAQ_ID})? c"
 	!else
-		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536LogDevModeMessage(m, i, i)(r0, ${OC_TMP_DEV_ERROR}, ${OC_FAQ_ID})? c"
+		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800LogDevModeMessage(m, i, i)(r0, ${OC_TMP_DEV_ERROR}, ${OC_FAQ_ID})? c"
 	!endif
 	Pop $0
 	!undef OC_TMP_DEV_ERROR
 !macroend
 
 
+
 ;
-; _OpenCandyInitChecksAndDefaults
-; -------------------------------
+; _OpenCandyInitChecks
+; --------------------
 ; This macro is internal to this helper script. Do not
 ; insert it in your own code.
 ;
 
-!macro _OpenCandyInitChecksAndDefaults
-	!ifdef _OpenCandyInitChecksAndDefaults
-		!error "_OpenCandyInitChecksAndDefaults inserted more than once"
-	!else
-		!define _OpenCandyInitChecksAndDefaults
+!macro _OpenCandyInitChecks
+	!ifndef _OpenCandyInitChecks
+		!define _OpenCandyInitChecks
 
-		; Compile-time checks and defaults
+		; Compile-time checks
 		!if "${PublisherName}" == "${OC_SAMPLE_PUBLISHERNAME}"
 			!warning "Do not forget to change the product name from '${OC_SAMPLE_PUBLISHERNAME}' to your company's product name before releasing this installer."
 		!endif
@@ -278,22 +299,6 @@ Var OCHasReachedOCPage
 		!if "${Secret}" == "${OC_SAMPLE_SECRET}"
 			!warning "Do not forget to change the sample secret '${OC_SAMPLE_SECRET}' to your company's product secret before releasing this installer."
 		!endif
-
-		; DLL relocation support
-		!ifndef OC_OCSETUPHLP_FILE_PATH
-			!warning "Do not forget to define OC_OCSETUPHLP_FILE_PATH in your script. Defaulting to 'OCSetupHlp.dll'."
-			!define OC_OCSETUPHLP_FILE_PATH ".\OCSetupHlp.dll"
-		!endif
-
-		; OC_MAX_INIT_TIME is the maximum time in milliseconds that OCInit may block when fetching offers.
-		; Note that under normal network conditions OCInit may return sooner. Setting this value too low
-		; may reduce offer rate. Values of 5000 or greater are recommended. If you intend to override this
-		; default do so by defining it in your .nsi file before #include'ing this header. Be certain to
-		; make OpenCandy partner support aware of any override you apply because this can affect your metrics.
-		!ifndef OC_MAX_INIT_TIME
-			!define OC_MAX_INIT_TIME 8000
-		!endif
-
 	!endif
 !macroend
 
@@ -324,7 +329,7 @@ ${If} $OCHasBeenInitialized <> ${OC_NSIS_TRUE}
 	StrCpy $5 $LANGUAGE
 	
 	; Check macro definitions and enforce defaults
-	!insertmacro _OpenCandyInitChecksAndDefaults
+	!insertmacro _OpenCandyInitChecks
 
 	; Initialize OpenCandy variables
 	StrCpy $OCNoCandy ${OC_NSIS_FALSE}
@@ -341,7 +346,7 @@ ${If} $OCHasBeenInitialized <> ${OC_NSIS_TRUE}
 	OCDLLExists:
 	ClearErrors
 	Push $0
-	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536LoadOpenCandyDLL()i().r0? c"
+	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800LoadOpenCandyDLL()i().r0? c"
 	IfErrors OCDLLoadFailed               ; System plugin failed
 	${if} $0 == error                     ; API call failed
 	${orif} $0 == ${OC_LOADOCDLL_FAILURE} ; API returned failure
@@ -363,12 +368,12 @@ ${If} $OCHasBeenInitialized <> ${OC_NSIS_TRUE}
 		OCNotSilent:
 
 		!ifdef NSIS_UNICODE
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536SetCmdLineValuesW(w)i(r0).r1? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800SetCmdLineValuesW(w)i(r0).r1? c"
 		!else
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536SetCmdLineValues(m)i(r0).r1? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800SetCmdLineValues(m)i(r0).r1? c"
 		!endif
 
-		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536GetNoCandy()i().r1? c"
+		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800GetNoCandy()i().r1? c"
 		${if} $1 == ${OC_CANDY_DISABLED}
 			StrCpy $OCNoCandy ${OC_NSIS_TRUE}
 		${endif}
@@ -386,11 +391,21 @@ ${If} $OCHasBeenInitialized <> ${OC_NSIS_TRUE}
 			!insertmacro _OpenCandyDevModeMsg "OCSetupHlp.nsh - Init: Value for Async must be either OC_NSIS_TRUE or OC_NSIS_FALSE." ${OC_NSIS_TRUE} 0
 			StrCpy $4 ${OC_INIT_ASYNC_ENABLE} ; Failsafe
 		${endif}
+		
+		; Pass advanced options to client
+		; These may be provided by OpenCandy partner support as required
+		!ifdef OC_ADV_OPTIONS
+			!ifdef NSIS_UNICODE
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800SetClientAdvancedOptionsW(w)('${OC_ADV_OPTIONS}')? c"
+			!else
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800SetClientAdvancedOptions(m)('${OC_ADV_OPTIONS}')? c"
+			!endif
+		!endif
 
 		!ifdef NSIS_UNICODE
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536Init2W(w, w, w, w, i, i, i)i(r0, r1, r2, r5, r3, ${OC_MAX_INIT_TIME}, r4).s? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800Init2W(w, w, w, w, i, i, i)i(r0, r1, r2, r5, r3, ${OC_MAX_INIT_TIME}, r4).s? c"
 		!else
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536Init2A(m, m, m, m, i, i, i)i(r0, r1, r2, r5, r3, ${OC_MAX_INIT_TIME}, r4).s? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800Init2A(m, m, m, m, i, i, i)i(r0, r1, r2, r5, r3, ${OC_MAX_INIT_TIME}, r4).s? c"
 		!endif
 
 		Exch $0
@@ -467,13 +482,13 @@ ${endif}
 ; or OpenCandyAsyncInit in that case. If you must use this method please
 ; be sure to inform the OpenCandy partner support team. Never directly
 ; place logical conditions around other OpenCandy functions and macros because
-; this can have unforseen consequences. You should call this procedure only
+; this can have unforseen consequences. You should insert this macro only
 ; after calling OpenCandyInit / OpenCandyAsyncInit.
 ;
 ; Usage:
 ;
-;  # This turns off offers from the OpenCandy network
-;  !insertmacro SetOCOfferEnabled ${OC_NSIS_FALSE}
+;   # This turns off offers from the OpenCandy network
+;   !insertmacro SetOCOfferEnabled ${OC_NSIS_FALSE}
 ;
 
 !macro SetOCOfferEnabled OC_OFFER_ENABLED
@@ -486,7 +501,7 @@ ${AndIf} $OCNoCandy == ${OC_NSIS_FALSE}
 	!else
 		!error "Value for OC_OFFER_ENABLED must be either OC_NSIS_TRUE or OC_NSIS_FALSE!"
 	!endif
-	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536SetOCOfferEnabled(i)(${OC_TMP_OFFER_ENABLED})? c"
+	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800SetOCOfferEnabled(i)(${OC_TMP_OFFER_ENABLED})? c"
 	!undef OC_TMP_OFFER_ENABLED
 ${EndIf}
 !macroend
@@ -531,7 +546,7 @@ ${AndIf} $OCNoCandy == ${OC_NSIS_FALSE}
 		!error "Value for OC_DETERMINES_OFFER_ENABLED must be either OC_NSIS_TRUE or OC_NSIS_FALSE!"
 	!endif
 	Push $0
-	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536GetAsyncOfferStatus(i)i(${OC_TMP_DETERMINES_OFFER_ENABLED}).r0? c"
+	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800GetAsyncOfferStatus(i)i(${OC_TMP_DETERMINES_OFFER_ENABLED}).r0? c"
 	Exch $0
 	!undef OC_TMP_DETERMINES_OFFER_ENABLED
 ${Else}
@@ -584,12 +599,12 @@ ${AndIf} $OCNoCandy == ${OC_NSIS_FALSE}
 	Push $0
 
 	${If} $OCAttached == ${OC_NSIS_TRUE}
-		System::Call "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536Detach()i.r0? c"
+		System::Call "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800Detach()i.r0? c"
 		StrCpy $OCAttached ${OC_NSIS_FALSE}
 	${EndIf}
 
 	${If} $OCHasReachedOCPage == ${OC_NSIS_FALSE}
-		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536GetAsyncOfferStatus(i)i(${OC_STATUS_QUERY_DETERMINESOFFERENABLED}).r0? c"
+		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800GetAsyncOfferStatus(i)i(${OC_STATUS_QUERY_DETERMINESOFFERENABLED}).r0? c"
 		${If} $0 == ${OC_OFFER_STATUS_CANOFFER_READY}
 			StrCpy $OCUseOfferPage ${OC_NSIS_TRUE}
 		${EndIf}
@@ -611,9 +626,9 @@ ${AndIf} $OCNoCandy == ${OC_NSIS_FALSE}
 		System::Call "*(&${OC_TMP_STRTYPE}${OC_STR_CHARS} '') i .r3" ; $1 points to OC_STR_CHARS chars of initialized memory
 		System::Call "*(&${OC_TMP_STRTYPE}${OC_STR_CHARS} '') i .r4" ; $2 points to OC_STR_CHARS chars of initialized memory
 		!ifdef NSIS_UNICODE
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536GetBannerInfoW(i, i)i(r3, r4).r0? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800GetBannerInfoW(i, i)i(r3, r4).r0? c"
 		!else
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536GetBannerInfo(i, i)i(r3, r4).r0? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800GetBannerInfo(i, i)i(r3, r4).r0? c"
 		!endif
 
 		; Override defaults based on what OCGetBannerInfo has filled
@@ -649,8 +664,8 @@ ${AndIf} $OCNoCandy == ${OC_NSIS_FALSE}
 			Abort
 		${Else}
 			!insertmacro MUI_HEADER_TEXT $1 $2
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536NSISAdjust(i, i, i, i, i)i(r3, 14, 70, 470, 228).r0? c"
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536RunDialog(i)i(r3).r0? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800NSISAdjust(i, i, i, i, i)i(r3, 14, 70, 470, 228).r0? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800RunDialog(i)i(r3).r0? c"
 			${If} $0 != ${OC_OFFER_RUNDIALOG_FAILURE}
 				StrCpy $OCAttached ${OC_NSIS_TRUE}
 				nsDialogs::Show
@@ -691,13 +706,13 @@ FunctionEnd
 
 Function _OpenCandyPageLeaveFn
 	Push $0
-	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536CanLeaveOfferPage()i.r0? c"
+	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800CanLeaveOfferPage()i.r0? c"
 	${If} $0 == ${OC_OFFER_LEAVEPAGE_DISALLOWED} ; If user must choose an option before proceeding
 		Pop $0
 		Abort
 	${EndIf}
 	${If} $OCAttached == ${OC_NSIS_TRUE}
-		System::Call "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536Detach()i.r0? c"
+		System::Call "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800Detach()i.r0? c"
 		StrCpy $OCAttached ${OC_NSIS_FALSE}
 	${EndIf}
 	Pop $0
@@ -730,12 +745,12 @@ FunctionEnd
 !endif
 	Push $0
 	${If} $OCUseOfferPage == ${OC_NSIS_TRUE}
-		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536GetOfferType() i.r0? c"
+		System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800GetOfferType() i.r0? c"
 		${If} $0 == ${OC_OFFER_TYPE}
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536PrepareDownload()i().r0? c"
-			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536GetOfferState()i().r0? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800PrepareDownload()i().r0? c"
+			System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800GetOfferState()i().r0? c"
 			${If} $0 == ${OC_OFFER_CHOICE_ACCEPTED}
-				System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536StartDLMgr2Download()? c"
+				System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800StartDLMgr2Download()? c"
 			${EndIf}
 		${EndIf}
 	${EndIf}
@@ -769,7 +784,7 @@ ${If} $OCHasBeenInitialized == ${OC_NSIS_TRUE}
 ${AndIf} $OCNoCandy == ${OC_NSIS_FALSE}
 	Push $0
 	!insertmacro _OpenCandyExecOfferInternal ${OC_OFFER_TYPE_NORMAL}
-	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536SignalProductInstalled()i.r0? c"
+	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800SignalProductInstalled()i.r0? c"
 	StrCpy $OCProductInstallSuccess ${OC_NSIS_TRUE}
 	Pop $0
 ${EndIf}
@@ -827,15 +842,15 @@ ${EndIf}
 ${If} $OCHasBeenInitialized == ${OC_NSIS_TRUE}
 ${AndIf} $OCNoCandy == ${OC_NSIS_FALSE}
 	${If} $OCProductInstallSuccess == ${OC_NSIS_FALSE}
-	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536SignalProductFailed()i.r0? c"
+	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800SignalProductFailed()i.r0? c"
 	${EndIf}
 	; Clean up and unload the OpenCandy DLL
 	Push $0
 	${If} $OCAttached == ${OC_NSIS_TRUE}
-		System::Call "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536Detach()i.r0? c"
+		System::Call "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800Detach()i.r0? c"
 		StrCpy $OCAttached ${OC_NSIS_FALSE}
 	${EndIf}	
-   	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD536Shutdown()i.r0? cu"
+   	System::Call /NOUNLOAD "$PLUGINSDIR\OCSetupHlp.dll::OCPRD800Shutdown()i.r0? cu"
 	Pop $0
 ${EndIf}
 !macroend

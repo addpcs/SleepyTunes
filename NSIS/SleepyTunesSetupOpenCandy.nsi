@@ -9,8 +9,8 @@
 
 # OpenCandy config
 !define OC_STR_MY_PRODUCT_NAME "${APPNAME}"
-!define OC_STR_KEY "748ad6d80864338c9c03b664839d8161"
-!define OC_STR_SECRET "dfb3a60d6bfdb55c50e1ef53249f1198"
+!define OC_STR_KEY "41f42d5021751df2406f6edeee3ad57e" ;test: "748ad6d80864338c9c03b664839d8161"
+!define OC_STR_SECRET "13c3f788bcce3287ee59c41ae437395d" ;test: "dfb3a60d6bfdb55c50e1ef53249f1198"
 !define OC_OCSETUPHLP_FILE_PATH ".\OCSetupHlp.dll"
 
 
