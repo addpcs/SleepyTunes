@@ -3,9 +3,10 @@
 ;--------------------------------
 
 !define APPNAME "SleepyTunes"
-!define COMPANY "addpcs"
+!define COMPANY_PATH "Addpcs"
+!define COMPANY "Addpcs, LLC"
 !define VERSION "1.0.0"
-!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${COMPANY} ${APPNAME}"
+!define UNINSTALL_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 
 # OpenCandy config
 !define OC_STR_MY_PRODUCT_NAME "${APPNAME}"
@@ -27,10 +28,10 @@ BrandingText "Copyright ${COMPANY} 2011"
 OutFile "..\bin\${APPNAME}_Setup_${VERSION}.exe"
 
 # default install location
-InstallDir "$PROGRAMFILES\${COMPANY}\${APPNAME}"
+InstallDir "$PROGRAMFILES\${APPNAME}"
 
 # Remember the installation directory for future updates and the uninstaller
-InstallDirRegKey HKLM "Software\${COMPANY}\${APPNAME}" "InstallDir"
+InstallDirRegKey HKLM "Software\${COMPANY_PATH}\${APPNAME}" "InstallDir"
 
 ; Use lzma compression
 SetCompressor lzma
@@ -150,12 +151,18 @@ Section "$(Section_Name_MainProduct)" sect0
 	${EndIf}
 	
 	# install the app
-	File ..\bin\${APPNAME}.exe
+	File "..\bin\${APPNAME}.exe"
+	File "..\readme\README.html"
+	File "..\readme\logo.png"
 
 	# Create an uninstaller and add it to the Add an Add/Remove programs list
 	WriteUninstaller Uninstall.exe
-	WriteRegStr HKLM "${UNINSTALL_KEY}" DisplayName "${COMPANY} ${APPNAME}"
-	WriteRegStr HKLM "${UNINSTALL_KEY}" DisplayIcon '"$OUTDIR\Uninstall.exe"'
+	WriteRegStr HKLM "${UNINSTALL_KEY}" DisplayName "${APPNAME}"
+	WriteRegStr HKLM "${UNINSTALL_KEY}" Publisher "${COMPANY}"
+	WriteRegStr HKLM "${UNINSTALL_KEY}" DisplayVersion "${VERSION}"
+	WriteRegStr HKLM "${UNINSTALL_KEY}" URLInfoAbout "http://software.addpcs.com/SleepyTunes/"
+	WriteRegStr HKLM "${UNINSTALL_KEY}" HelpLink "http://contact.addpcs.com/"
+	WriteRegStr HKLM "${UNINSTALL_KEY}" DisplayIcon '"$OUTDIR\${APPNAME}.exe"'
 	WriteRegStr HKLM "${UNINSTALL_KEY}" UninstallString '"$OUTDIR\Uninstall.exe"'	
 	
 	Pop $OUTDIR
@@ -164,6 +171,8 @@ SectionEnd
 # Uninstalls the main app
 Section "un.$(Section_Name_MainProduct)"
 	Delete /REBOOTOK "$INSTDIR\${APPNAME}.exe"
+	Delete /REBOOTOK "$INSTDIR\README.html"
+	Delete /REBOOTOK "$INSTDIR\logo.png"
 	
 	# Remove the uninstaller and Add/Remove programs information
 	Delete /REBOOTOK "$INSTDIR\Uninstall.exe"
@@ -175,13 +184,12 @@ SectionEnd
 
 # Install Start Menu shortuct
 Section "$(Section_Name_StartMenuIcon)" sect1
-	CreateShortCut "$SMPROGRAMS\${COMPANY}\${APPNAME}.lnk" "$INSTDIR\${APPNAME}.exe"
+	CreateShortCut "$SMPROGRAMS\${APPNAME}.lnk" "$INSTDIR\${APPNAME}.exe"
 SectionEnd
 
 # Uninstall Start Menu shortuct
 Section "un.$(Section_Name_StartMenuIcon)"
-	Delete /REBOOTOK "$SMPROGRAMS\${COMPANY}\${APPNAME}.lnk"
-	RMDir /REBOOTOK "$SMPROGRAMS\${COMPANY}"
+	Delete /REBOOTOK "$SMPROGRAMS\${APPNAME}.lnk"
 SectionEnd
 
 # Install Desktop Shortcut
